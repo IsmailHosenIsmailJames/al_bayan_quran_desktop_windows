@@ -4,12 +4,12 @@ import 'package:al_bayan_quran/screens/favorite_bookmark_notes/book_mark.dart';
 import 'package:al_bayan_quran/screens/favorite_bookmark_notes/favorite.dart';
 import 'package:al_bayan_quran/screens/favorite_bookmark_notes/notes_v.dart';
 import 'package:appwrite/appwrite.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:just_audio_background/just_audio_background.dart';
 import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
 import 'package:sidebarx/sidebarx.dart';
 
@@ -35,12 +35,12 @@ int currentIndex = 0;
 class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
   final SidebarXController _sidebarXController =
       SidebarXController(selectedIndex: 0);
+
+  GlobalKey<ScaffoldState> drawerController = GlobalKey<ScaffoldState>();
   bool isPlaying = false;
   AudioPlayer player = AudioPlayer();
   String currentReciter = "";
   int playingIndex = -1;
-  int surahNumber = -1;
-
   List<DropdownMenuEntry<Object>> dropdownList = [];
 
   List<int> expandedPosition = [];
@@ -74,13 +74,20 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
       if (player.processingState == ProcessingState.completed) {
         if (playingIndex >= 113) {
           setState(() {
-            playingIndex = -1;
             isPlaying = false;
           });
         } else {
-          playAudio(playingIndex + 1, wait: true);
+          playAudio(playingIndex + 2, wait: true);
         }
       }
+      if (player.playing == false && player.nextIndex == null) {
+        setState(() {
+          playingIndex = -1;
+        });
+      }
+      setState(() {
+        isPlaying = event.playing;
+      });
     });
 
     super.initState();
@@ -380,132 +387,43 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
     return toReturn;
   }
 
-  void playAudio(int index, {bool start = false, bool wait = false}) async {
-    setState(() {
-      surahNumber = index;
-    });
-
-    List<String> listOfURL = getAllAudioUrl();
-    if (playingIndex != index || start) {
-      if (wait) {
-        await Future.delayed(const Duration(seconds: 1));
-      }
-      try {
-        List<AudioSource> audioResourceSource = [];
-        final surahNameSimple = allChaptersInfo[surahNumber]['name_simple'];
-
-        for (int i = 0; i < listOfURL.length; i++) {
-          audioResourceSource.add(
-            LockCachingAudioSource(
-              Uri.parse(listOfURL[i]),
-              tag: MediaItem(
-                displayTitle: "$surahNameSimple - ${i + 1} ",
-                displaySubtitle: currentReciter.split("(")[0],
-                id: "$i",
-                title: currentReciter.split('(')[0],
-                displayDescription: listOfURL[i],
-              ),
-            ),
-          );
-        }
-        final playlist = ConcatenatingAudioSource(
-          shuffleOrder: DefaultShuffleOrder(),
-          children: audioResourceSource,
-        );
-        await player.setAudioSource(
-          playlist,
-        );
-        player.play();
-        setState(() {
-          playingIndex = index;
-          isPlaying = true;
-        });
-      } catch (e) {
-        showDialog(
-          // ignore: use_build_context_synchronously
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text(
-              "An error occoured",
-            ),
-            content: const Text(
-                "Need stable internet connection for play audio for the first time."),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: const Text("OK"),
-              ),
-            ],
-          ),
-        );
-      }
-    } else if (index == playingIndex && player.playing == false) {
-      player.play();
-      setState(() {
-        playingIndex = index;
-        isPlaying = true;
-      });
-    } else {
-      player.pause();
-    }
-  }
-
   List<Widget> listSurahProviderForAudio(length) {
     List<Widget> listSurah = [];
 
-    for (int index = 0; index < length; index++) {
-      String revelationPlace = allChaptersInfo[index]['revelation_place'];
-      String nameSimple = allChaptersInfo[index]['name_simple'];
-      String nameArabic = allChaptersInfo[index]['name_arabic'];
-      int versesCount = allChaptersInfo[index]['verses_count'];
+    for (int idx = 0; idx < length; idx++) {
+      String revelationPlace = allChaptersInfo[idx]['revelation_place'];
+      String nameSimple = allChaptersInfo[idx]['name_simple'];
+      String nameArabic = allChaptersInfo[idx]['name_arabic'];
+      int versesCount = allChaptersInfo[idx]['verses_count'];
       listSurah.add(
-        GestureDetector(
-          onTap: () {
-            if (playingIndex == index) {
-              if (player.playing) {
-                player.pause();
-                setState(() {
-                  isPlaying = false;
-                });
-              } else {
-                player.play();
-                setState(() {
-                  isPlaying = true;
-                });
-              }
-            } else {
-              playAudio(index);
-              setState(() {
-                playingIndex = index;
-              });
-            }
-          },
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            margin: const EdgeInsets.only(left: 5, right: 5, top: 2, bottom: 2),
-            decoration: BoxDecoration(
-                color: const Color.fromARGB(20, 125, 125, 125),
-                borderRadius: BorderRadius.circular(15)),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundColor: const Color.fromARGB(195, 0, 133, 4),
-                      child: Center(
-                        child: Text(
-                          (index + 1).toString(),
-                          style: const TextStyle(color: Colors.white),
-                        ),
+        Container(
+          padding: const EdgeInsets.all(10),
+          margin: const EdgeInsets.only(left: 5, right: 5, top: 2, bottom: 2),
+          decoration: BoxDecoration(
+              color: const Color.fromARGB(20, 125, 125, 125),
+              borderRadius: BorderRadius.circular(15)),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: const Color.fromARGB(195, 0, 133, 4),
+                    child: Center(
+                      child: Text(
+                        (idx + 1).toString(),
+                        style: const TextStyle(color: Colors.white),
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8.0),
-                      child: playingIndex == index && isPlaying
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8.0),
+                    child: IconButton(
+                      onPressed: () {
+                        playAudio(idx);
+                      },
+                      icon: playingIndex == idx && isPlaying
                           ? const Icon(
                               Icons.pause_rounded,
                               size: 30,
@@ -517,54 +435,54 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
                               color: Color.fromARGB(195, 0, 133, 4),
                             ),
                     ),
-                    Container(
-                      margin: const EdgeInsets.only(left: 15),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            nameSimple,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+                  ),
+                  Container(
+                    margin: const EdgeInsets.only(left: 15),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          nameSimple,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
-                          Text(
-                            revelationPlace,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Color.fromARGB(255, 136, 136, 136),
-                            ),
-                          )
-                        ],
-                      ),
-                    )
-                  ],
-                ),
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      nameArabic,
-                      style: const TextStyle(
-                        fontSize: 16,
-                      ),
+                        ),
+                        Text(
+                          revelationPlace,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Color.fromARGB(255, 136, 136, 136),
+                          ),
+                        )
+                      ],
                     ),
-                    Text(
-                      "$versesCount Ayahs",
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: Color.fromARGB(255, 136, 136, 136),
-                      ),
+                  )
+                ],
+              ),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    nameArabic,
+                    style: const TextStyle(
+                      fontSize: 16,
                     ),
-                  ],
-                )
-              ],
-            ),
+                  ),
+                  Text(
+                    "$versesCount Ayahs",
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Color.fromARGB(255, 136, 136, 136),
+                    ),
+                  ),
+                ],
+              )
+            ],
           ),
         ),
       );
@@ -572,12 +490,12 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
     return listSurah;
   }
 
-  List<String> getAllAudioUrl() {
+  List<String> getAllAudioUrl(int surahNumber) {
     int start = 0;
     int end = allChaptersInfo[surahNumber]['verses_count'];
     List<String> listOfURL = [];
     for (int i = start; i < end; i++) {
-      listOfURL.add(getFullURL(i + 1));
+      listOfURL.add(getFullURL(i + 1, surahNumber));
     }
     return listOfURL;
   }
@@ -589,7 +507,7 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
     return audioBaseURL;
   }
 
-  String getIdOfAudio(int ayahNumber) {
+  String getIdOfAudio(int ayahNumber, int surahNumber) {
     String suraString = "";
     if (surahNumber < 10) {
       suraString = "00${surahNumber + 1}";
@@ -610,7 +528,7 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
     return suraString + ayahString;
   }
 
-  int getAyahCountFromStart(int ayahNumber) {
+  int getAyahCountFromStart(int ayahNumber, int surahNumber) {
     for (int i = 0; i < surahNumber; i++) {
       int verseCount = allChaptersInfo[i]['verses_count'];
       ayahNumber += verseCount;
@@ -618,11 +536,11 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
     return ayahNumber;
   }
 
-  String getFullURL(int ayahNumber) {
+  String getFullURL(int ayahNumber, int surahNumber) {
     String recitorChoice =
         infoBox.get("info")['recitation_ID'] ?? currentReciter;
     String baseURL = getBaseURLOfAudio(recitorChoice);
-    String audioID = getIdOfAudio(ayahNumber);
+    String audioID = getIdOfAudio(ayahNumber, surahNumber);
     return "$baseURL/$audioID.mp3";
   }
 
@@ -963,7 +881,7 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
                     IconButton(
                       tooltip: "Close Drawer",
                       onPressed: () {
-                        Scaffold.of(context).closeDrawer();
+                        drawerController.currentState!.closeDrawer();
                       },
                       icon: const Icon(
                         Icons.close_rounded,
@@ -1009,8 +927,6 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
               player = AudioPlayer();
               setState(() {
                 playingIndex = -1;
-                surahNumber = -1;
-                isPlaying = false;
               });
             },
             child: const Row(
@@ -1038,8 +954,6 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
               player = AudioPlayer();
               setState(() {
                 playingIndex = -1;
-                surahNumber = -1;
-                isPlaying = false;
               });
             },
             child: const Row(
@@ -1068,8 +982,6 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
               player = AudioPlayer();
               setState(() {
                 playingIndex = -1;
-                surahNumber = -1;
-                isPlaying = false;
               });
             },
             child: const Row(
@@ -1221,6 +1133,7 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
         DefaultTabController(
           length: 2,
           child: Scaffold(
+            key: drawerController,
             drawer: MediaQuery.of(context).size.width > 800 ? null : myDrawer,
             appBar: MediaQuery.of(context).size.width > 800
                 ? null
@@ -1316,7 +1229,8 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
                 if (constraints.maxWidth > 720) {
                   return Row(
                     children: [
-                      if (MediaQuery.of(context).size.width > 800) sidebarx,
+                      if (MediaQuery.of(context).size.width > 800)
+                        SideBar(sidebarXController: _sidebarXController),
                       Expanded(
                         flex: 3,
                         child: ListView(
@@ -1339,15 +1253,10 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
                 } else {
                   return TabBarView(
                     children: [
-                      Scrollbar(
-                        interactive: true,
-                        radius: const Radius.circular(10),
-                        thickness: 10,
-                        child: ListView(
-                          scrollDirection: Axis.vertical,
-                          padding: const EdgeInsets.only(bottom: 50, top: 5),
-                          children: listSurahProvider(114),
-                        ),
+                      ListView(
+                        scrollDirection: Axis.vertical,
+                        padding: const EdgeInsets.only(bottom: 50, top: 5),
+                        children: listSurahProvider(114),
                       ),
                       ListView.builder(
                         controller: scrollController,
@@ -1504,6 +1413,7 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
           ),
         ),
         Scaffold(
+          key: drawerController,
           drawer: MediaQuery.of(context).size.width > 800 ? null : myDrawer,
           appBar: MediaQuery.of(context).size.width > 800
               ? null
@@ -1530,7 +1440,8 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (MediaQuery.of(context).size.width > 800) sidebarx,
+                      if (MediaQuery.of(context).size.width > 800)
+                        SideBar(sidebarXController: _sidebarXController),
                       Expanded(
                         child: dropdown,
                       ),
@@ -1557,18 +1468,6 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     IconButton(
-                      tooltip: "Jump to Previous Surah",
-                      onPressed: playingIndex < 0
-                          ? null
-                          : () {
-                              playAudio(playingIndex - 1);
-                            },
-                      icon: const Icon(
-                        Icons.navigate_before_rounded,
-                        size: 40,
-                      ),
-                    ),
-                    IconButton(
                       tooltip: "Jump to Previous Ayah",
                       onPressed: () {
                         player.seekToPrevious();
@@ -1581,17 +1480,39 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
                     IconButton(
                       tooltip: "Play Or Pause",
                       onPressed: () async {
+                        final connectivityResult =
+                            await (Connectivity().checkConnectivity());
+
+                        if (!(connectivityResult
+                                    .contains(ConnectivityResult.ethernet) ||
+                                connectivityResult
+                                    .contains(ConnectivityResult.wifi) ||
+                                connectivityResult
+                                    .contains(ConnectivityResult.mobile)) &&
+                            !(player.playing)) {
+                          showDialog(
+                            // ignore: use_build_context_synchronously
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title:
+                                  const Text("Error: No Internet Connection"),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                  },
+                                  child: const Text("OK"),
+                                ),
+                              ],
+                            ),
+                          );
+                          return;
+                        }
                         if (playingIndex != -1) {
                           if (player.playing) {
                             player.pause();
-                            setState(() {
-                              isPlaying = false;
-                            });
                           } else {
                             player.play();
-                            setState(() {
-                              isPlaying = true;
-                            });
                           }
                         } else {
                           playAudio(0);
@@ -1614,18 +1535,6 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
                       },
                       icon: const Icon(
                         Icons.skip_next_rounded,
-                        size: 40,
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: "Jump to Next Surah",
-                      onPressed: playingIndex >= 113
-                          ? null
-                          : () async {
-                              playAudio(playingIndex + 1);
-                            },
-                      icon: const Icon(
-                        Icons.navigate_next_rounded,
                         size: 40,
                       ),
                     ),
@@ -1666,190 +1575,162 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
     );
   }
 
-  late Widget sidebarx = SidebarX(
-    controller: _sidebarXController,
-    theme: SidebarXTheme(
-      margin: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: canvasColor,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      hoverColor: scaffoldBackgroundColor,
-      textStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
-      selectedTextStyle: const TextStyle(color: Colors.white),
-      itemTextPadding: const EdgeInsets.only(left: 30),
-      selectedItemTextPadding: const EdgeInsets.only(left: 30),
-      itemDecoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: canvasColor),
-      ),
-      selectedItemDecoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: actionColor.withOpacity(0.37),
+  void playAudio(int idx, {bool start = false, bool wait = false}) async {
+    final connectivityResult = await (Connectivity().checkConnectivity());
+
+    if (idx == 0) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      setState(() {
+        playingIndex = 0;
+      });
+      List<String> listOfURL = getAllAudioUrl(0);
+      List<AudioSource> audioSource = [];
+      for (int i = 0; i < listOfURL.length; i++) {
+        audioSource.add(AudioSource.uri(Uri.parse(listOfURL[i])));
+      }
+      // Define the playlist
+      final playlist = ConcatenatingAudioSource(
+        // Start loading next item just before reaching it
+        useLazyPreparation: true,
+        // Customise the shuffle algorithm
+        shuffleOrder: DefaultShuffleOrder(),
+        // Specify the playlist items
+        children: audioSource,
+      );
+
+      await player.setAudioSource(playlist,
+          initialIndex: 0, initialPosition: Duration.zero);
+      await Future.delayed(const Duration(milliseconds: 200));
+      player.play();
+    } else if ((connectivityResult.contains(ConnectivityResult.ethernet) ||
+            connectivityResult.contains(ConnectivityResult.wifi) ||
+            connectivityResult.contains(ConnectivityResult.mobile)) &&
+        playingIndex != idx - 1) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      setState(() {
+        playingIndex = idx - 1;
+      });
+      List<String> listOfURL = getAllAudioUrl(idx - 1);
+      // print(listOfURL);
+      List<AudioSource> audioSource = [];
+      for (int i = 0; i < listOfURL.length; i++) {
+        audioSource.add(AudioSource.uri(Uri.parse(listOfURL[i])));
+      }
+      // Define the playlist
+      final playlist = ConcatenatingAudioSource(
+        // Start loading next item just before reaching it
+        useLazyPreparation: true,
+        // Customise the shuffle algorithm
+        shuffleOrder: DefaultShuffleOrder(),
+        // Specify the playlist items
+        children: audioSource,
+      );
+
+      await player.setAudioSource(playlist,
+          initialIndex: 0, initialPosition: Duration.zero);
+      await Future.delayed(const Duration(milliseconds: 200));
+      player.play();
+    } else if (player.playing && playingIndex == idx - 1) {
+      player.pause();
+    } else if (playingIndex == idx - 1) {
+      player.play();
+    }
+  }
+}
+
+class SideBar extends StatelessWidget {
+  final SidebarXController sidebarXController;
+  const SideBar({super.key, required this.sidebarXController});
+
+  @override
+  Widget build(BuildContext context) {
+    return SidebarX(
+      controller: sidebarXController,
+      theme: SidebarXTheme(
+        margin: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: canvasColor,
+          borderRadius: BorderRadius.circular(20),
         ),
-        gradient: const LinearGradient(
-          colors: [accentCanvasColor, canvasColor],
+        hoverColor: scaffoldBackgroundColor,
+        textStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+        selectedTextStyle: const TextStyle(color: Colors.white),
+        itemTextPadding: const EdgeInsets.only(left: 30),
+        selectedItemTextPadding: const EdgeInsets.only(left: 30),
+        itemDecoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: canvasColor),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.28),
-            blurRadius: 30,
-          )
-        ],
+        selectedItemDecoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: actionColor.withOpacity(0.37),
+          ),
+          gradient: const LinearGradient(
+            colors: [accentCanvasColor, canvasColor],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.28),
+              blurRadius: 30,
+            )
+          ],
+        ),
+        iconTheme: IconThemeData(
+          color: Colors.white.withOpacity(0.7),
+          size: 20,
+        ),
+        selectedIconTheme: const IconThemeData(
+          color: Color.fromARGB(255, 84, 235, 89),
+          size: 20,
+        ),
       ),
-      iconTheme: IconThemeData(
-        color: Colors.white.withOpacity(0.7),
-        size: 20,
+      extendedTheme: const SidebarXTheme(
+        width: 200,
+        decoration: BoxDecoration(
+          color: canvasColor,
+        ),
       ),
-      selectedIconTheme: const IconThemeData(
-        color: Color.fromARGB(255, 84, 235, 89),
-        size: 20,
-      ),
-    ),
-    extendedTheme: const SidebarXTheme(
-      width: 200,
-      decoration: BoxDecoration(
-        color: canvasColor,
-      ),
-    ),
-    footerDivider: divider,
-    headerBuilder: isExtended
-        ? (context, extended) {
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                !isLoogedIn
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            TextButton.icon(
-                              onPressed: () {
-                                Get.to(() => const LogIn());
-                              },
-                              label: const Text(
-                                "LogIn",
-                                style: TextStyle(
-                                  color: Colors.green,
-                                  fontSize: 20,
-                                ),
-                              ),
-                              icon: const Icon(
-                                Icons.login,
-                                color: Colors.green,
-                              ),
-                            ),
-                            const Text(
-                              "You Need to login\nfor more Features.",
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.white,
-                              ),
-                            )
-                          ],
-                        ),
-                      )
-                    : Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 25,
-                            backgroundColor: Colors.green,
-                            child: GetX<AccountInfo>(
-                              builder: (controller) => Text(
-                                controller.name.value.substring(0, 1),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 30,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(
-                            width: 5,
-                          ),
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              GetX<AccountInfo>(
-                                builder: (controller) => Text(
-                                  controller.name.value.length > 10
-                                      ? "${controller.name.value.substring(0, 10)}..."
-                                      : controller.name.value,
-                                  style: const TextStyle(
-                                    fontSize: 26,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              GetX<AccountInfo>(
-                                builder: (controller) => Text(
-                                  controller.email.value.length > 20
-                                      ? "${controller.email.value.substring(0, 15)}...${controller.email.value.substring(controller.email.value.length - 9, controller.email.value.length)}"
-                                      : controller.email.value,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                              GetX<AccountInfo>(
-                                builder: (controller) => Text(
-                                  controller.uid.value,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                themeIconButton,
-              ],
-            );
-          }
-        : null,
-    items: [
-      SidebarXItem(
-        icon: Icons.home,
-        label: 'Home',
-        onTap: () {
-          Get.to(() => const HomeMobile());
-        },
-      ),
-      SidebarXItem(
-        icon: Icons.favorite,
-        label: 'Favorite',
-        onTap: () {
-          Get.to(() => const Favorite());
-        },
-      ),
-      SidebarXItem(
-        icon: Icons.bookmark_added,
-        label: 'BookMark',
-        onTap: () {
-          Get.to(() => const BookMark());
-        },
-      ),
-      SidebarXItem(
-        icon: Icons.note_add,
-        label: 'Notes',
-        onTap: () {
-          Get.to(() => const NotesView());
-        },
-      ),
-      SidebarXItem(
-        icon: Icons.settings,
-        label: 'Settings',
-        onTap: () {
-          Get.to(() => const SettingsWithAppbar());
-        },
-      ),
-    ],
-  );
+      footerDivider: divider,
+      items: [
+        SidebarXItem(
+          icon: Icons.home,
+          label: 'Home',
+          onTap: () {
+            Get.to(() => const HomeMobile());
+          },
+        ),
+        SidebarXItem(
+          icon: Icons.favorite,
+          label: 'Favorite',
+          onTap: () {
+            Get.to(() => const Favorite());
+          },
+        ),
+        SidebarXItem(
+          icon: Icons.bookmark_added,
+          label: 'BookMark',
+          onTap: () {
+            Get.to(() => const BookMark());
+          },
+        ),
+        SidebarXItem(
+          icon: Icons.note_add,
+          label: 'Notes',
+          onTap: () {
+            Get.to(() => const NotesView());
+          },
+        ),
+        SidebarXItem(
+          icon: Icons.settings,
+          label: 'Settings',
+          onTap: () {
+            Get.to(() => const SettingsWithAppbar());
+          },
+        ),
+      ],
+    );
+  }
 }
 
 const primaryColor = Color(0xFF685BFF);

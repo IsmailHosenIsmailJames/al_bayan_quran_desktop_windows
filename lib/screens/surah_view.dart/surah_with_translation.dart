@@ -12,7 +12,6 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:just_audio_background/just_audio_background.dart';
 
 import '../../api/colors_tazweed.dart';
 import '../settings/settings.dart';
@@ -161,21 +160,11 @@ class _SurahWithTranslationState extends State<SurahWithTranslation> {
   void playAudioList(List<String> listOfAudioURL, int index,
       [bool dontPlayNow = false]) async {
     try {
-      final infoBox = Hive.box("info");
-      final info = infoBox.get("info");
-      String recitorChoice = info['recitation_ID'];
       List<AudioSource> audioResourceSource = [];
       for (int i = 0; i < listOfAudioURL.length; i++) {
         audioResourceSource.add(
-          LockCachingAudioSource(
+          AudioSource.uri(
             Uri.parse(listOfAudioURL[i]),
-            tag: MediaItem(
-              displayTitle: "$surahNameSimple - ${i + 1}",
-              displaySubtitle: recitorChoice.split("(")[0],
-              id: "$i",
-              title: recitorChoice.split('(')[0],
-              displayDescription: listOfAudioURL[i],
-            ),
           ),
         );
       }
@@ -187,6 +176,7 @@ class _SurahWithTranslationState extends State<SurahWithTranslation> {
       await player.setAudioSource(playlist,
           initialIndex: index, initialPosition: Duration.zero);
       if (!dontPlayNow) {
+        await Future.delayed(const Duration(milliseconds: 200));
         await player.play();
       } else {
         setState(() {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:sidebarx/sidebarx.dart';
 
-import '../drawer/drawer.dart';
+import '../home_mobile.dart';
 import 'notes_get_data.dart';
 
 class NotesView extends StatelessWidget {
@@ -10,18 +11,28 @@ class NotesView extends StatelessWidget {
   Widget build(BuildContext context) {
     List<Widget> list = buildListOfWidgetForNotes();
     return Scaffold(
-      drawer: const MyDrawer(),
-      appBar: AppBar(
-        title: const Text("Notes"),
-      ),
-      body: ListView(
-        children: list.isEmpty
-            ? [
-                const Center(
-                  child: Text("No Notes found"),
-                )
-              ]
-            : list,
+      body: Row(
+        children: [
+          SideBar(
+            sidebarXController: SidebarXController(
+              selectedIndex: 3,
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              children: list.isEmpty
+                  ? [
+                      SizedBox(
+                        height: MediaQuery.of(context).size.height,
+                        child: const Center(
+                          child: Text("No Notes found"),
+                        ),
+                      )
+                    ]
+                  : list,
+            ),
+          ),
+        ],
       ),
     );
   }

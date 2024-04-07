@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:sidebarx/sidebarx.dart';
 
-import '../drawer/drawer.dart';
+import '../home_mobile.dart';
 import 'get_data.dart';
 
 class BookMark extends StatelessWidget {
@@ -12,18 +13,28 @@ class BookMark extends StatelessWidget {
       "bookmark",
     );
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("BookMark"),
-      ),
-      drawer: const MyDrawer(),
-      body: ListView(
-        children: list.isEmpty
-            ? [
-                const Center(
-                  child: Text("No Book Mark Found"),
-                )
-              ]
-            : list,
+      body: Row(
+        children: [
+          SideBar(
+            sidebarXController: SidebarXController(
+              selectedIndex: 2,
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              children: list.isEmpty
+                  ? [
+                      SizedBox(
+                        height: MediaQuery.of(context).size.height,
+                        child: const Center(
+                          child: Text("No Book Mark Found"),
+                        ),
+                      )
+                    ]
+                  : list,
+            ),
+          ),
+        ],
       ),
     );
   }

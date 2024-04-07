@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:just_audio_background/just_audio_background.dart';
 
 import '../../api/all_recitation.dart';
 import '../getx/get_controller.dart';
@@ -20,16 +19,21 @@ class _RecitaionChoiceState extends State<RecitaionChoice> {
   final infoController = Get.put(InfoController());
 
   late List<String> allRecitationSearch = [];
+  bool isPlaying = false;
 
   @override
   void initState() {
     allRecitationSearch.addAll(allRecitation);
     player.playerStateStream.listen((event) {
-      if (event.processingState == ProcessingState.completed) {
+      if (event.processingState == ProcessingState.completed &&
+          player.currentIndex! >= 6) {
         setState(() {
           playingIndex = -1;
         });
       }
+      setState(() {
+        isPlaying = event.playing;
+      });
     });
     if (widget.previousInfo != null) {
       Map<String, String> temInfo = widget.previousInfo!;
@@ -64,10 +68,8 @@ class _RecitaionChoiceState extends State<RecitaionChoice> {
   }
 
   List<String> listUrl = [];
-  int playing = 0;
 
   void playResource(String url, int ayahCount) async {
-    playing = 0;
     listUrl = [];
     setState(() {
       listUrl;
@@ -81,14 +83,7 @@ class _RecitaionChoiceState extends State<RecitaionChoice> {
 
     List<AudioSource> audioResourceSource = [];
     for (int i = 0; i < 7; i++) {
-      audioResourceSource.add(LockCachingAudioSource(
-        Uri.parse(listUrl[i]),
-        tag: MediaItem(
-          displayTitle: "Surah Fateha",
-          id: "$i",
-          title: url,
-        ),
-      ));
+      audioResourceSource.add(AudioSource.uri(Uri.parse(listUrl[i])));
     }
     final playlist = ConcatenatingAudioSource(
       shuffleOrder: DefaultShuffleOrder(),
@@ -96,6 +91,7 @@ class _RecitaionChoiceState extends State<RecitaionChoice> {
     );
     await player.setAudioSource(playlist,
         initialIndex: 0, initialPosition: Duration.zero);
+    await Future.delayed(const Duration(milliseconds: 100));
     await player.play();
   }
 
@@ -200,12 +196,16 @@ class _RecitaionChoiceState extends State<RecitaionChoice> {
                                     resumeOrPuseAudio(false);
                                   }
                                 },
-                                icon: Icon(playingIndex == index
-                                    ? Icons.pause
-                                    : Icons.play_arrow),
+                                icon: Icon(
+                                  playingIndex == index
+                                      ? Icons.pause_rounded
+                                      : Icons.play_arrow_rounded,
+                                  color: Colors.green.shade600,
+                                  size: 30,
+                                ),
                                 style: IconButton.styleFrom(
                                   backgroundColor:
-                                      const Color.fromARGB(108, 0, 140, 255),
+                                      const Color.fromARGB(60, 126, 126, 126),
                                 ),
                               ),
                             ),

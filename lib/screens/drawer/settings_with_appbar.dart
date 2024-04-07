@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:sidebarx/sidebarx.dart';
 
-import '../../theme/theme_icon_button.dart';
+import '../home_mobile.dart';
 import '../settings/settings.dart';
 
 class SettingsWithAppbar extends StatelessWidget {
@@ -9,22 +10,19 @@ class SettingsWithAppbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          "Settings",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
+      body: Row(
+        children: [
+          SideBar(
+            sidebarXController: SidebarXController(
+              selectedIndex: 4,
+            ),
           ),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(left: 10, right: 10),
-            child: themeIconButton,
+          const Expanded(
+            child: Settings(
+              showNavigator: false,
+            ),
           ),
         ],
-      ),
-      body: const Settings(
-        showNavigator: false,
       ),
     );
   }
