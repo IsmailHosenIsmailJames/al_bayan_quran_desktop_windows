@@ -15,6 +15,7 @@ import 'package:hive/hive.dart';
 import 'package:just_audio/just_audio.dart';
 
 import '../../api/colors_tazweed.dart';
+import '../../theme/theme_controller.dart';
 import '../settings/settings.dart';
 import 'notes/notes.dart';
 
@@ -487,6 +488,7 @@ class _SuraViewState extends State<SuraView> {
       body: Column(
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               IconButton(
                 onPressed: () async {
@@ -502,7 +504,6 @@ class _SuraViewState extends State<SuraView> {
                   size: 30,
                 ),
               ),
-              const Spacer(),
               Text(
                 widget.surahName ?? "",
                 style: const TextStyle(
@@ -510,7 +511,34 @@ class _SuraViewState extends State<SuraView> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const Spacer(),
+              IconButton(
+                onPressed: () async {
+                  await Hive.openBox(quranScriptType);
+                  showModalBottomSheet(
+                    // ignore: use_build_context_synchronously
+                    context: context,
+                    useSafeArea: true,
+                    builder: (context) {
+                      return DraggableScrollableSheet(
+                        expand: false,
+                        initialChildSize: 0.90,
+                        minChildSize: 0.25,
+                        maxChildSize: 1,
+                        builder: (context, scrollController) {
+                          return const Settings(
+                            showNavigator: true,
+                          );
+                        },
+                      );
+                    },
+                    isScrollControlled: true,
+                  );
+                },
+                icon: const Icon(
+                  color: Colors.green,
+                  Icons.settings,
+                ),
+              )
             ],
           ),
           Expanded(
