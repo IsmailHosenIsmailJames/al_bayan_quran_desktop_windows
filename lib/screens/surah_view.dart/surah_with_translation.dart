@@ -7,6 +7,7 @@ import 'package:al_bayan_quran/screens/surah_view.dart/tafseer/tafseer.dart';
 import 'package:archive/archive.dart';
 import 'package:clipboard/clipboard.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
@@ -17,31 +18,31 @@ import '../../api/colors_tazweed.dart';
 import '../settings/settings.dart';
 import 'notes/notes.dart';
 
-class SurahWithTranslation extends StatefulWidget {
+AudioPlayer player = AudioPlayer();
+
+class SuraView extends StatefulWidget {
   final int surahNumber;
+  final String? surahName;
   final int? start;
   final int? end;
-  final String? surahName;
   final int? scrollToAyah;
-  const SurahWithTranslation({
-    super.key,
-    required this.surahNumber,
-    this.start,
-    this.end,
-    required this.surahName,
-    this.scrollToAyah,
-  });
+  const SuraView(
+      {super.key,
+      required this.surahNumber,
+      this.start,
+      this.end,
+      this.surahName,
+      this.scrollToAyah});
 
   @override
-  State<SurahWithTranslation> createState() => _SurahWithTranslationState();
+  State<SuraView> createState() => _SuraViewState();
 }
 
-class _SurahWithTranslationState extends State<SurahWithTranslation> {
+class _SuraViewState extends State<SuraView> {
   late int totalAyahInSuarh;
   late String? surahNameSimple;
   late String? surahNameArabic;
   late String? relavencePlace;
-  AudioPlayer player = AudioPlayer();
 
   List<int> listOfAyah = [];
   List<GlobalKey> listOfkey = [];
@@ -144,14 +145,7 @@ class _SurahWithTranslationState extends State<SurahWithTranslation> {
     }
   }
 
-  @override
-  void dispose() {
-    player.dispose();
-    super.dispose();
-  }
-
   final controller = Get.put(ScreenGetxController());
-  final ScrollController scrollController = ScrollController();
   bool isPlaying = false;
   int playingIndex = -1;
   bool isLoading = false;
@@ -485,16 +479,38 @@ class _SurahWithTranslationState extends State<SurahWithTranslation> {
               ),
             )
           : null,
-      body: Scrollbar(
-        interactive: true,
-        controller: scrollController,
-        radius: const Radius.circular(10),
-        thickness: 10,
-        child: ListView(
-          controller: scrollController,
-          padding: const EdgeInsets.only(bottom: 40),
-          children: listOfWidgetOfAyah(listOfAyah.length + 1),
-        ),
+      body: Column(
+        children: [
+          Row(
+            children: [
+              IconButton(
+                onPressed: () async {
+                  player.pause();
+                  Navigator.pop(context);
+                },
+                icon: const Icon(
+                  Icons.arrow_back,
+                  size: 30,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                widget.surahName ?? "",
+                style: const TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+            ],
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.only(bottom: 40),
+              children: listOfWidgetOfAyah(listOfAyah.length + 1),
+            ),
+          ),
+        ],
       ),
     );
   }

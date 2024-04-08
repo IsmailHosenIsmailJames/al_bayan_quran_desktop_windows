@@ -513,7 +513,7 @@ packages:
     source: hosted
     version: "1.11.0"
   msix:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: msix
       sha256: "519b183d15dc9f9c594f247e2d2339d855cf0eaacc30e19b128e14f3ecc62047"

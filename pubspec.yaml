@@ -40,6 +40,7 @@ dependencies:
   sidebarx: ^0.16.3
   just_audio_windows: ^0.2.0
   path_provider: ^2.1.2
+  msix: ^3.16.7
 
   # google_fonts: ^6.1.0
 
@@ -48,7 +49,6 @@ dev_dependencies:
     sdk: flutter
 
   flutter_lints: ^3.0.1
-  msix: ^3.16.7
 
 flutter:
 

@@ -7,7 +7,7 @@ import 'package:hive/hive.dart';
 
 import '../../api/some_api_response.dart';
 import '../getx_controller.dart';
-import '../surah_view.dart/sura_view.dart';
+import '../surah_view.dart/surah_with_translation.dart';
 import '../surah_view.dart/tafseer/tafseer.dart';
 
 int getAyahCountFromStart(int ayahNumber, int surahNumber) {

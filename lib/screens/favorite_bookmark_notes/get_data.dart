@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:al_bayan_quran/screens/surah_view.dart/sura_view.dart';
 import 'package:al_bayan_quran/screens/surah_view.dart/tafseer/tafseer.dart';
 import 'package:archive/archive.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +8,7 @@ import 'package:hive/hive.dart';
 
 import '../../api/some_api_response.dart';
 import '../getx_controller.dart';
+import '../surah_view.dart/surah_with_translation.dart';
 
 List<Map<String, String>> getAllFavoriteWithData(String name) {
   final box = Hive.box("info");

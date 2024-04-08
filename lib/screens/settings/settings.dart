@@ -74,38 +74,30 @@ class _SettingsState extends State<Settings> {
     return ListView(
       padding: const EdgeInsets.all(10),
       children: [
-        if (widget.showNavigator)
-          Row(
-            children: [
-              const Icon(
-                Icons.settings,
+        Row(
+          children: [
+            const Icon(
+              Icons.settings,
+              color: Colors.green,
+            ),
+            const SizedBox(
+              width: 10,
+            ),
+            const Text(
+              "Settings",
+              style: TextStyle(
+                fontSize: 24,
                 color: Colors.green,
+                fontWeight: FontWeight.bold,
               ),
-              const SizedBox(
-                width: 10,
-              ),
-              const Text(
-                "Settings",
-                style: TextStyle(
-                  fontSize: 24,
-                  color: Colors.green,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const Spacer(),
-              Padding(
-                padding: const EdgeInsets.only(left: 10, right: 10),
-                child: themeIconButton,
-              ),
-              IconButton(
-                iconSize: 20,
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                icon: const Icon(Icons.close),
-              ),
-            ],
-          ),
+            ),
+            const Spacer(),
+            Padding(
+              padding: const EdgeInsets.only(left: 10, right: 10),
+              child: themeIconButton,
+            ),
+          ],
+        ),
         const Row(
           children: [
             Icon(

@@ -4,12 +4,10 @@ import 'package:al_bayan_quran/screens/favorite_bookmark_notes/book_mark.dart';
 import 'package:al_bayan_quran/screens/favorite_bookmark_notes/favorite.dart';
 import 'package:al_bayan_quran/screens/favorite_bookmark_notes/notes_v.dart';
 import 'package:appwrite/appwrite.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
-import 'package:just_audio/just_audio.dart';
 import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
 import 'package:sidebarx/sidebarx.dart';
 
@@ -21,7 +19,7 @@ import '../auth/login/login.dart';
 import '../theme/theme_controller.dart';
 import '../theme/theme_icon_button.dart';
 import 'profile/profile.dart';
-import 'surah_view.dart/sura_view.dart';
+import 'surah_view.dart/surah_with_translation.dart';
 
 class HomeMobile extends StatefulWidget {
   const HomeMobile({super.key});
@@ -38,7 +36,6 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
 
   GlobalKey<ScaffoldState> drawerController = GlobalKey<ScaffoldState>();
   bool isPlaying = false;
-  AudioPlayer player = AudioPlayer();
   String currentReciter = "";
   int playingIndex = -1;
   List<DropdownMenuEntry<Object>> dropdownList = [];
@@ -63,32 +60,6 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
     final info = infoBox.get("info", defaultValue: false);
 
     currentReciter = info['recitation_ID'];
-
-    player.playerStateStream.listen((event) async {
-      if (player.processingState == ProcessingState.completed ||
-          player.playing == false) {
-        setState(() {
-          isPlaying = false;
-        });
-      }
-      if (player.processingState == ProcessingState.completed) {
-        if (playingIndex >= 113) {
-          setState(() {
-            isPlaying = false;
-          });
-        } else {
-          playAudio(playingIndex + 2, wait: true);
-        }
-      }
-      if (player.playing == false && player.nextIndex == null) {
-        setState(() {
-          playingIndex = -1;
-        });
-      }
-      setState(() {
-        isPlaying = event.playing;
-      });
-    });
 
     super.initState();
     for (int i = 0; i < 30; i++) {
@@ -151,7 +122,6 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
             final tem = Hive.box("info");
             await Hive.openBox(
                 tem.get("quranScriptType", defaultValue: "quran_tajweed"));
-            player.dispose();
             setState(() {
               isPlaying = false;
               playingIndex = -1;
@@ -162,7 +132,6 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
                 surahName: nameSimple,
               );
             });
-            player = AudioPlayer();
           },
           child: Container(
             padding: const EdgeInsets.all(10),
@@ -387,163 +356,6 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
     return toReturn;
   }
 
-  List<Widget> listSurahProviderForAudio(length) {
-    List<Widget> listSurah = [];
-
-    for (int idx = 0; idx < length; idx++) {
-      String revelationPlace = allChaptersInfo[idx]['revelation_place'];
-      String nameSimple = allChaptersInfo[idx]['name_simple'];
-      String nameArabic = allChaptersInfo[idx]['name_arabic'];
-      int versesCount = allChaptersInfo[idx]['verses_count'];
-      listSurah.add(
-        Container(
-          padding: const EdgeInsets.all(10),
-          margin: const EdgeInsets.only(left: 5, right: 5, top: 2, bottom: 2),
-          decoration: BoxDecoration(
-              color: const Color.fromARGB(20, 125, 125, 125),
-              borderRadius: BorderRadius.circular(15)),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundColor: const Color.fromARGB(195, 0, 133, 4),
-                    child: Center(
-                      child: Text(
-                        (idx + 1).toString(),
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8.0),
-                    child: IconButton(
-                      onPressed: () {
-                        playAudio(idx);
-                      },
-                      icon: playingIndex == idx && isPlaying
-                          ? const Icon(
-                              Icons.pause_rounded,
-                              size: 30,
-                              color: Color.fromARGB(195, 0, 133, 4),
-                            )
-                          : const Icon(
-                              Icons.play_arrow_rounded,
-                              size: 30,
-                              color: Color.fromARGB(195, 0, 133, 4),
-                            ),
-                    ),
-                  ),
-                  Container(
-                    margin: const EdgeInsets.only(left: 15),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          nameSimple,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          revelationPlace,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Color.fromARGB(255, 136, 136, 136),
-                          ),
-                        )
-                      ],
-                    ),
-                  )
-                ],
-              ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    nameArabic,
-                    style: const TextStyle(
-                      fontSize: 16,
-                    ),
-                  ),
-                  Text(
-                    "$versesCount Ayahs",
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Color.fromARGB(255, 136, 136, 136),
-                    ),
-                  ),
-                ],
-              )
-            ],
-          ),
-        ),
-      );
-    }
-    return listSurah;
-  }
-
-  List<String> getAllAudioUrl(int surahNumber) {
-    int start = 0;
-    int end = allChaptersInfo[surahNumber]['verses_count'];
-    List<String> listOfURL = [];
-    for (int i = start; i < end; i++) {
-      listOfURL.add(getFullURL(i + 1, surahNumber));
-    }
-    return listOfURL;
-  }
-
-  String getBaseURLOfAudio(String recitor) {
-    List<String> splited = recitor.split("(");
-    String urlID = splited[1].replaceAll(")", "");
-    String audioBaseURL = "https://everyayah.com/data/$urlID";
-    return audioBaseURL;
-  }
-
-  String getIdOfAudio(int ayahNumber, int surahNumber) {
-    String suraString = "";
-    if (surahNumber < 10) {
-      suraString = "00${surahNumber + 1}";
-    } else if (surahNumber + 1 < 100) {
-      suraString = "0${surahNumber + 1}";
-    } else {
-      suraString = (surahNumber + 1).toString();
-    }
-    String ayahString = "";
-
-    if (ayahNumber < 10) {
-      ayahString = "00$ayahNumber";
-    } else if (ayahNumber < 100) {
-      ayahString = "0$ayahNumber";
-    } else {
-      ayahString = ayahNumber.toString();
-    }
-    return suraString + ayahString;
-  }
-
-  int getAyahCountFromStart(int ayahNumber, int surahNumber) {
-    for (int i = 0; i < surahNumber; i++) {
-      int verseCount = allChaptersInfo[i]['verses_count'];
-      ayahNumber += verseCount;
-    }
-    return ayahNumber;
-  }
-
-  String getFullURL(int ayahNumber, int surahNumber) {
-    String recitorChoice =
-        infoBox.get("info")['recitation_ID'] ?? currentReciter;
-    String baseURL = getBaseURLOfAudio(recitorChoice);
-    String audioID = getIdOfAudio(ayahNumber, surahNumber);
-    return "$baseURL/$audioID.mp3";
-  }
-
   List<Widget> listSurahProvider(length) {
     List<Widget> listSurah = [];
 
@@ -555,7 +367,6 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
       listSurah.add(
         GestureDetector(
           onTap: () async {
-            player.dispose();
             setState(() {
               isPlaying = false;
               playingIndex = -1;
@@ -569,7 +380,6 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
                 surahName: nameSimple,
               );
             });
-            player = AudioPlayer();
           },
           child: Container(
             padding: const EdgeInsets.all(10),
@@ -666,7 +476,6 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
       listOfWidget.add(GestureDetector(
         behavior: HitTestBehavior.translucent,
         onTap: () async {
-          player.dispose();
           setState(() {
             isPlaying = false;
             playingIndex = -1;
@@ -689,7 +498,6 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
                 start: startFrom,
                 end: endTo,
               ));
-          player = AudioPlayer();
         },
         child: Container(
           padding: const EdgeInsets.all(10),
@@ -767,7 +575,6 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
 
   @override
   void dispose() async {
-    await player.dispose();
     for (int i = 0; i < 30; i++) {
       controller[i].dispose();
     }
@@ -920,11 +727,9 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
             onPressed: () async {
               await Hive.openBox('quran');
               await Hive.openBox("translation");
-              await player.dispose();
               await Get.to(
                 () => const Favorite(),
               );
-              player = AudioPlayer();
               setState(() {
                 playingIndex = -1;
               });
@@ -949,9 +754,7 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
             onPressed: () async {
               await Hive.openBox('quran');
               await Hive.openBox("translation");
-              await player.dispose();
               await Get.to(() => const BookMark());
-              player = AudioPlayer();
               setState(() {
                 playingIndex = -1;
               });
@@ -977,9 +780,7 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
               await Hive.openBox('quran');
               await Hive.openBox("translation");
               await Hive.openBox("notes");
-              await player.dispose();
               await Get.to(() => const NotesView());
-              player = AudioPlayer();
               setState(() {
                 playingIndex = -1;
               });
@@ -1004,7 +805,6 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
             onPressed: () async {
               await Hive.openBox("translation");
               await Hive.openBox(quranScriptType);
-              await player.dispose();
               await Get.to(() => const SettingsWithAppbar());
             },
             child: const Row(
@@ -1055,39 +855,8 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
       ),
     );
 
-    Widget dropdown = Padding(
-      padding: const EdgeInsets.only(
-        left: 10,
-        right: 10,
-        bottom: 5,
-        top: 5,
-      ),
-      child: DropdownMenu(
-        inputDecorationTheme: InputDecorationTheme(
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
-        ),
-        menuHeight: 300,
-        label: const Text("All Reciters List"),
-        onSelected: (value) {
-          Map<String, String> temInfoMap =
-              Map<String, String>.from(infoBox.get("info"));
-          temInfoMap['recitation_ID'] = value.toString();
-          infoBox.put("info", temInfoMap);
-          setState(() {
-            currentReciter = value.toString();
-          });
-          if (playingIndex != -1) {
-            playAudio(playingIndex, start: true);
-          }
-        },
-        dropdownMenuEntries: dropdownList,
-      ),
-    );
-
     return Scaffold(
-      bottomNavigationBar: MediaQuery.of(context).size.width > 720
+      bottomNavigationBar: MediaQuery.of(context).size.width > 650
           ? null
           : SalomonBottomBar(
               selectedItemColor: Colors.green,
@@ -1110,16 +879,6 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
                 SalomonBottomBarItem(
                   icon: const Padding(
                     padding: EdgeInsets.only(left: 20, right: 20),
-                    child: Icon(Icons.audiotrack_outlined),
-                  ),
-                  title: const Text(
-                    "Audio",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                ),
-                SalomonBottomBarItem(
-                  icon: const Padding(
-                    padding: EdgeInsets.only(left: 20, right: 20),
                     child: Icon(Icons.person),
                   ),
                   title: const Text(
@@ -1134,8 +893,8 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
           length: 2,
           child: Scaffold(
             key: drawerController,
-            drawer: MediaQuery.of(context).size.width > 800 ? null : myDrawer,
-            appBar: MediaQuery.of(context).size.width > 800
+            drawer: MediaQuery.of(context).size.width > 650 ? null : myDrawer,
+            appBar: MediaQuery.of(context).size.width > 650
                 ? null
                 : AppBar(
                     title: const Text(
@@ -1193,7 +952,7 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
                       //     },
                       //     icon: const Icon(Icons.search))
                     ],
-                    bottom: MediaQuery.of(context).size.width > 720
+                    bottom: MediaQuery.of(context).size.width > 650
                         ? null
                         : const TabBar(
                             tabs: [
@@ -1229,7 +988,7 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
                 if (constraints.maxWidth > 720) {
                   return Row(
                     children: [
-                      if (MediaQuery.of(context).size.width > 800)
+                      if (MediaQuery.of(context).size.width > 650)
                         SideBar(sidebarXController: _sidebarXController),
                       Expanded(
                         flex: 3,
@@ -1412,142 +1171,10 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
             ),
           ),
         ),
-        Scaffold(
-          key: drawerController,
-          drawer: MediaQuery.of(context).size.width > 800 ? null : myDrawer,
-          appBar: MediaQuery.of(context).size.width > 800
-              ? null
-              : AppBar(
-                  title: const Text(
-                    "Audio",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-          body: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (MediaQuery.of(context).size.width <= 720) dropdown,
-              if (MediaQuery.of(context).size.width <= 720)
-                Expanded(
-                  child: ListView(children: listSurahProviderForAudio(114)),
-                ),
-              if (MediaQuery.of(context).size.width > 720)
-                Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (MediaQuery.of(context).size.width > 800)
-                        SideBar(sidebarXController: _sidebarXController),
-                      Expanded(
-                        child: dropdown,
-                      ),
-                      Expanded(
-                        child: ListView(
-                          children: listSurahProviderForAudio(114),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              Text(currentReciter.split("(")[0]),
-              Container(
-                margin: const EdgeInsets.only(left: 10, right: 10),
-                height: 80,
-                decoration: const BoxDecoration(
-                  color: Color.fromARGB(30, 125, 125, 125),
-                  borderRadius: BorderRadius.all(
-                    Radius.circular(50),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      tooltip: "Jump to Previous Ayah",
-                      onPressed: () {
-                        player.seekToPrevious();
-                      },
-                      icon: const Icon(
-                        Icons.skip_previous_rounded,
-                        size: 40,
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: "Play Or Pause",
-                      onPressed: () async {
-                        final connectivityResult =
-                            await (Connectivity().checkConnectivity());
-
-                        if (!(connectivityResult
-                                    .contains(ConnectivityResult.ethernet) ||
-                                connectivityResult
-                                    .contains(ConnectivityResult.wifi) ||
-                                connectivityResult
-                                    .contains(ConnectivityResult.mobile)) &&
-                            !(player.playing)) {
-                          showDialog(
-                            // ignore: use_build_context_synchronously
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title:
-                                  const Text("Error: No Internet Connection"),
-                              actions: [
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.pop(context);
-                                  },
-                                  child: const Text("OK"),
-                                ),
-                              ],
-                            ),
-                          );
-                          return;
-                        }
-                        if (playingIndex != -1) {
-                          if (player.playing) {
-                            player.pause();
-                          } else {
-                            player.play();
-                          }
-                        } else {
-                          playAudio(0);
-                        }
-                      },
-                      icon: isPlaying
-                          ? const Icon(
-                              Icons.pause_rounded,
-                              size: 55,
-                            )
-                          : const Icon(
-                              Icons.play_arrow_rounded,
-                              size: 55,
-                            ),
-                    ),
-                    IconButton(
-                      tooltip: "Jump to Next Ayah",
-                      onPressed: () {
-                        player.seekToNext();
-                      },
-                      icon: const Icon(
-                        Icons.skip_next_rounded,
-                        size: 40,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
         const Profile(),
       ].elementAt(currentIndex),
       floatingActionButtonLocation: FloatingActionButtonLocation.miniEndDocked,
-      floatingActionButton: MediaQuery.of(context).size.width > 720
+      floatingActionButton: MediaQuery.of(context).size.width > 650
           ? FloatingActionButton.extended(
               onPressed: null,
               extendedPadding: EdgeInsets.zero,
@@ -1561,10 +1188,6 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
                     title: const Text("Quran"),
                   ),
                   SalomonBottomBarItem(
-                    icon: const Icon(Icons.audiotrack_outlined),
-                    title: const Text("Audio"),
-                  ),
-                  SalomonBottomBarItem(
                     icon: const Icon(Icons.person),
                     title: const Text("Profile"),
                   ),
@@ -1573,68 +1196,6 @@ class _HomeMobileState extends State<HomeMobile> with TickerProviderStateMixin {
             )
           : null,
     );
-  }
-
-  void playAudio(int idx, {bool start = false, bool wait = false}) async {
-    final connectivityResult = await (Connectivity().checkConnectivity());
-
-    if (idx == 0) {
-      await Future.delayed(const Duration(milliseconds: 100));
-      setState(() {
-        playingIndex = 0;
-      });
-      List<String> listOfURL = getAllAudioUrl(0);
-      List<AudioSource> audioSource = [];
-      for (int i = 0; i < listOfURL.length; i++) {
-        audioSource.add(AudioSource.uri(Uri.parse(listOfURL[i])));
-      }
-      // Define the playlist
-      final playlist = ConcatenatingAudioSource(
-        // Start loading next item just before reaching it
-        useLazyPreparation: true,
-        // Customise the shuffle algorithm
-        shuffleOrder: DefaultShuffleOrder(),
-        // Specify the playlist items
-        children: audioSource,
-      );
-
-      await player.setAudioSource(playlist,
-          initialIndex: 0, initialPosition: Duration.zero);
-      await Future.delayed(const Duration(milliseconds: 200));
-      player.play();
-    } else if ((connectivityResult.contains(ConnectivityResult.ethernet) ||
-            connectivityResult.contains(ConnectivityResult.wifi) ||
-            connectivityResult.contains(ConnectivityResult.mobile)) &&
-        playingIndex != idx - 1) {
-      await Future.delayed(const Duration(milliseconds: 100));
-      setState(() {
-        playingIndex = idx - 1;
-      });
-      List<String> listOfURL = getAllAudioUrl(idx - 1);
-      // print(listOfURL);
-      List<AudioSource> audioSource = [];
-      for (int i = 0; i < listOfURL.length; i++) {
-        audioSource.add(AudioSource.uri(Uri.parse(listOfURL[i])));
-      }
-      // Define the playlist
-      final playlist = ConcatenatingAudioSource(
-        // Start loading next item just before reaching it
-        useLazyPreparation: true,
-        // Customise the shuffle algorithm
-        shuffleOrder: DefaultShuffleOrder(),
-        // Specify the playlist items
-        children: audioSource,
-      );
-
-      await player.setAudioSource(playlist,
-          initialIndex: 0, initialPosition: Duration.zero);
-      await Future.delayed(const Duration(milliseconds: 200));
-      player.play();
-    } else if (player.playing && playingIndex == idx - 1) {
-      player.pause();
-    } else if (playingIndex == idx - 1) {
-      player.play();
-    }
   }
 }
 
@@ -1650,7 +1211,7 @@ class SideBar extends StatelessWidget {
         margin: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: canvasColor,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(10),
         ),
         hoverColor: scaffoldBackgroundColor,
         textStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
