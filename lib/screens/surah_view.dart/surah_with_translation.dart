@@ -151,9 +151,14 @@ class _SuraViewState extends State<SuraView> {
   bool isLoading = false;
   bool showFloatingControllers = false;
   bool expandFloatingControllers = true;
+  bool playFromStart = true;
+
   void playAudioList(List<String> listOfAudioURL, int index,
       [bool dontPlayNow = false]) async {
     try {
+      setState(() {
+        playFromStart = false;
+      });
       List<AudioSource> audioResourceSource = [];
       for (int i = 0; i < listOfAudioURL.length; i++) {
         audioResourceSource.add(
@@ -485,7 +490,11 @@ class _SuraViewState extends State<SuraView> {
             children: [
               IconButton(
                 onPressed: () async {
-                  player.pause();
+                  setState(() {
+                    playFromStart = true;
+                  });
+                  await player.pause();
+                  // ignore: use_build_context_synchronously
                   Navigator.pop(context);
                 },
                 icon: const Icon(
@@ -622,7 +631,10 @@ class _SuraViewState extends State<SuraView> {
                               List<String> listOfAudioURL = getAllAudioUrl();
                               playAudioList(listOfAudioURL, 0);
                             }
-                            if (!player.playing && playingIndex == -1) {
+
+                            if (!player.playing && playingIndex == -1 ||
+                                playFromStart) {
+                              print("object  0985049  349539 2345235");
                               setState(() {
                                 showFloatingControllers = true;
                                 playingIndex = 0;
@@ -912,7 +924,15 @@ class _SuraViewState extends State<SuraView> {
                           ),
                         ),
                         onPressed: () {
-                          if (playingIndex + 1 == index && player.playing) {
+                          if (playFromStart) {
+                            setState(() {
+                              showFloatingControllers = true;
+                              isPlaying = true;
+                              playingIndex = index - 1;
+                            });
+                            playAudioList(getAllAudioUrl(), index - 1);
+                          } else if (playingIndex + 1 == index &&
+                              player.playing) {
                             player.pause();
                           } else if (playingIndex + 1 == index) {
                             player.play();
